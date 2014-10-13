@@ -40,7 +40,8 @@ var runDiagnostics = function() {
   [
     // Tests against production queue
     'queue/ping.js',
-    'queue/createTask.js'
+    'queue/createTask.js',
+    'queue/helloWorld.js'
   ].forEach(function(filename) {
     mocha.addFile(path.join(__dirname, '..', 'diagnostics', filename));
   });
@@ -72,7 +73,7 @@ if (!module.parent) {
   }
   // Run diagnostics with given profile
   runDiagnostics(profile).then(function() {
-    debug("Ran diagnostics"); 
+    debug("Ran diagnostics");
     // We should exit zero
     process.exit(0);
   }).catch(function(err) {

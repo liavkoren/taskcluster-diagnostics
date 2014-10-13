@@ -1,8 +1,7 @@
 suite("helloWorld", function() {
-  var assert              = require('assert');
+  // var assert              = require('assert');
   var utils               = require('../utils');
   var slugid              = require('slugid');
-  var taskcluster         = require('taskcluster-client');
   var debug               = require('debug')('diagnostics:queue:createTask');
 
   // Set an excessive timeout

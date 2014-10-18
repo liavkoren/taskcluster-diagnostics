@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+/*jslint node: true */
+
+'use strict';
+
 var base        = require('taskcluster-base');
 var debug       = require('debug')('diagnostics:bin:run-diagnostics');
 var Mocha       = require('mocha');

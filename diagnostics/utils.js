@@ -12,9 +12,9 @@ var initialize = function(options) {
     credentials:      options.taskcluster.credentials
   });
 
-  exports.listener = new taskcluster.Listener({
-    connectionString:    'amqp://ilknxuuf:quYfD8HMJ1d-99aO1Bxzuh_TSwSIuc0h@purple-weasel.rmq.cloudamqp.com/ilknxuuf'
-  });
+  //exports.listener = new taskcluster.Listener({
+  //  connectionString:    'amqp://ilknxuuf:quYfD8HMJ1d-99aO1Bxzuh_TSwSIuc0h@purple-weasel.rmq.cloudamqp.com/ilknxuuf'
+  //});
 
   exports.queueEvents = new taskcluster.QueueEvents();
 };

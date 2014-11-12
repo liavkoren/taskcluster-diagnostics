@@ -4,65 +4,69 @@
 "use strict";
 
 
+// Global reference to listener
+var listener = null;
+
+// clean up after tests that creates a listener
+var teardown = function() {
+  if (listener) {
+    listener.close();
+    listener = null;
+  }
+};
+
+
 suite("helloWorld", function() {
+  var assert              = require('assert');
+  var base                = require('taskcluster-base');
   var utils               = require("../utils");
   var slugid              = require("slugid");
   var debug               = require("debug")("diagnostics:queue:helloWorld");
+  var taskcluster         = require("taskcluster-client");
+  var Promise             = require("promise");
 
   // Set an excessive timeout
-  this.timeout(60 * 1000);
+  this.timeout(10 * 60 * 1000);
 
   test("Can create docker instance... ", function() {
+    var cfg = base.config({filename: 'taskcluster-diagnostics'});
+
     // Create a taskId (url-safe base64 encoded uuid without '=' padding)
     var taskId = slugid.v4();
     console.log("TaskId is: ");
     console.log(taskId);
+    listener = new taskcluster.PulseListener(cfg.get('pulseListener'));
+    listener.bind(utils.queueEvents.taskCompleted({taskId: taskId}));
 
-    var success = function(msg) {
-        // console.log(msg);
-        // debugger;
-        var utils               = require("../utils");
-        var listener = utils.listener;
-        var queueEvents = utils.queueEvents;
-        listener.bind(queueEvents.taskCompleted({taskId: msg.status.taskId}));
-        listener.on("message", function(message){
-          // console.log(message);
-          // Wait for a message
-          var gotMessage = new Promise(function(accept, reject) {
-            listener.on("message", accept);
-            listener.on("error", reject);
-          });
-          return {
-            ready:      listener.resume(),
-            message:    gotMessage
-          };
-        });
-        return listener;
-      };
+    var gotMessage = new Promise(function(accept, reject) {
+      listener.once("message", accept);
+      listener.once("error", reject);
+    });
 
-    return utils.queue.createTask(taskId, {
-      provisionerId:    "aws-provisioner",
-      workerType:       "v2",
-      created:          new Date().toJSON(),
-      deadline:         new Date(new Date().getTime() + 60 * 60 * 1000).toJSON(),
-      payload:          {
-        image:          "ubuntu:14.04",
-        command:        ["/bin/bash", "-c", "echo 'Hello World'"],
-      },
-      metadata: {
-        name:           "Docker Hello World test",
-        description:    "Task that tests Docker image creation and creating a simple artifact.",
-        owner:          "nobody@localhost.local",
-        source:         "https://github.com/taskcluster/taskcluster-diagnostics"
-      }
-    }).then(success, function(err) {
-      // Print the error
-      debug("queue.createTask error: %j", err);
-      // Retrow the error
-      throw err;
+    // Wait for taskCompletedHandler to be ready, ie. for listenFor
+    // to have started the PulseListener
+    listener.resume().then(function() {
+      return utils.queue.createTask(taskId, {
+        provisionerId:    "aws-provisioner",
+        workerType:       "v2",
+        created:          new Date().toJSON(),
+        deadline:         new Date(new Date().getTime() + 60 * 60 * 1000).toJSON(),
+        payload:          {
+          image:          "ubuntu:14.04",
+          command:        ["/bin/bash", "-c", "echo 'Hello World'"],
+        },
+        metadata: {
+          name:           "Docker Hello World test",
+          description:    "Task that tests Docker image creation and creating a simple artifact.",
+          owner:          "nobody@localhost.local",
+          source:         "https://github.com/taskcluster/taskcluster-diagnostics"
+        }
+      });
+    }).then(function() {
+      debug("Created a task, now waiting for message about completion");
+      return gotMessage.then(function(message) {
+        assert(message.status.taskId === taskId, "Got wrong taskId");
+      });
     });
   });
 });
-
-
-

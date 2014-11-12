@@ -71,7 +71,7 @@ if (!module.parent) {
   // Find configuration profile
   var profile = process.argv[2];
   if (!profile) {
-    console.log("Usage: run-diagnostics.js [profile]")
+    console.log("Usage: run-diagnostics.js [profile]");
     console.error("ERROR: No configuration profile is provided");
     process.exit(1);
   }

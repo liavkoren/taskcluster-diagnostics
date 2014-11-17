@@ -39,13 +39,20 @@ suite("helloWorld", function() {
     listener.bind(utils.queueEvents.taskCompleted({taskId: taskId}));
 
     var gotMessage = new Promise(function(accept, reject) {
-      listener.once("message", accept);
-      listener.once("error", reject);
+      listener.on("message", function() {
+        console.log("accept");
+        accept();
+      });
+      listener.on("error", function(){
+        console.log("reject");
+        reject();
+      });
     });
 
     // Wait for taskCompletedHandler to be ready, ie. for listenFor
     // to have started the PulseListener
-    listener.resume().then(function() {
+    return listener.resume().then(function() {
+      console.log("listener.resume.then");
       return utils.queue.createTask(taskId, {
         provisionerId:    "aws-provisioner",
         workerType:       "v2",
@@ -63,6 +70,7 @@ suite("helloWorld", function() {
         }
       });
     }).then(function() {
+      console.log("debug?");
       debug("Created a task, now waiting for message about completion");
       return gotMessage.then(function(message) {
         assert(message.status.taskId === taskId, "Got wrong taskId");

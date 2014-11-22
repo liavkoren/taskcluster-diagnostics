@@ -33,18 +33,16 @@ suite("helloWorld", function() {
 
     // Create a taskId (url-safe base64 encoded uuid without '=' padding)
     var taskId = slugid.v4();
-    console.log("TaskId is: ");
-    console.log(taskId);
+    debug("TaskId is: " + taskId);
     listener = new taskcluster.PulseListener(cfg.get('pulseListener'));
     listener.bind(utils.queueEvents.taskCompleted({taskId: taskId}));
 
     var gotMessage = new Promise(function(accept, reject) {
-      listener.on("message", function() {
-        console.log("accept");
+      listener.on("message", function(message) {
+        assert(message.payload.status.taskId === taskId, "Got wrong taskId");
         accept();
       });
       listener.on("error", function(){
-        console.log("reject");
         reject();
       });
     });
@@ -52,7 +50,6 @@ suite("helloWorld", function() {
     // Wait for taskCompletedHandler to be ready, ie. for listenFor
     // to have started the PulseListener
     return listener.resume().then(function() {
-      console.log("listener.resume.then");
       return utils.queue.createTask(taskId, {
         provisionerId:    "aws-provisioner",
         workerType:       "v2",
@@ -70,11 +67,8 @@ suite("helloWorld", function() {
         }
       });
     }).then(function() {
-      console.log("debug?");
       debug("Created a task, now waiting for message about completion");
-      return gotMessage.then(function(message) {
-        assert(message.status.taskId === taskId, "Got wrong taskId");
-      });
+      return gotMessage.then();
     });
   });
 });
